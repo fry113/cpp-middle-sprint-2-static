@@ -22,11 +22,11 @@ RUN ln -fs /usr/bin/g++-15 /usr/bin/g++
 RUN ln -fs /usr/bin/gcc-15 /usr/bin/gcc
 
 ARG USERNAME=dev
-ARG USER_UID
-ARG USER_GID
+ARG USER_UID1=1000
+ARG USER_GID1=1000
 
-RUN printf "\n\n\nReceived args:\n\tUSERNAME=$USERNAME\n\tUSER_UID=$USER_UID\n\tUSER_GID=$USER_GID\n"
-RUN test -n "$USER_UID" && test -n "$USER_GID" || (printf "\n\n\n\tERROR: USER_UID (equal to '$USER_UID') or USER_GID (equal to '$USER_GID') is not set!\n\n\n" && exit 1)
+RUN printf "\n\n\nReceived args:\n\tUSERNAME=$USERNAME\n\tUSER_UID1=$USER_UID1\n\tUSER_GID1=$USER_GID1\n"
+RUN test -n "$USER_UID1" && test -n "$USER_GID1" || (printf "\n\n\n\tERROR: USER_UID1 (equal to '$USER_UID1') or USER_GID1 (equal to '$USER_GID1') is not set!\n\n\n" && exit 1)
 
 # Delete Ubuntu user to avoid "UID/GID is already exists" problems
 RUN set -e; \
@@ -41,17 +41,17 @@ RUN set -e; \
 
 # Create a non-root user 'dev' with host UID/GID
 RUN set -e; \
-    echo "Create group $USERNAME with GID=$USER_GID"; \
-    groupadd --gid $USER_GID $USERNAME; \
+    echo "Create group $USERNAME with GID=$USER_GID1"; \
+    groupadd --gid $USER_GID1 $USERNAME; \
     \
-    echo "Create user $USERNAME with UID=$USER_UID and GID=$USER_GID"; \
-    useradd -ms /bin/bash --uid $USER_UID --gid $USER_GID $USERNAME; \
+    echo "Create user $USERNAME with UID=$USER_UID1 and GID=$USER_GID1"; \
+    useradd -ms /bin/bash --uid $USER_UID1 --gid $USER_GID1 $USERNAME; \
     \
     # Configure NOPASSWD option
     echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USERNAME; \
     chmod 0440 /etc/sudoers.d/$USERNAME; \
     \
-    echo "User $USERNAME with UID=$USER_UID and GID=$USER_GID was successfully created"
+    echo "User $USERNAME with UID=$USER_UID1 and GID=$USER_GID1 was successfully created"
 
 # Switch to non-root user
 USER $USERNAME
