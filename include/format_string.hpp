@@ -11,24 +11,26 @@ namespace stdx::details {
 // параметризованный NTTP типа fixed_string
 template <fixed_string fx_str>
 class format_string {
-    // private: ?
 public:
     // статическое поле класса для доступа к NTTP снаружи
     static constexpr fixed_string str{fx_str};
 
+private:
     // статический метод для получения количества плейсхолдеров и проверки корректности формирующей строки
     static consteval std::expected<size_t, parse_error> get_number_placeholders();
-
     // static_assert успешного вызова get_number_placeholders()
     static_assert(get_number_placeholders().has_value(),
                   "format string is invalid: fail to get number of placeholders");
 
+public:
     // статическое поле количества плейсхолдеров
     static constexpr auto number_placeholders = get_number_placeholders().value();
 
+private:
     // статический метод получения пар позиций плейсхолдеров
     static consteval std::array<std::pair<size_t, size_t>, number_placeholders> get_placeholder_positions();
 
+public:
     // статическое поле для хранения позиций плейсхолдеров
     static constexpr auto placeholder_positions = get_placeholder_positions();
     // static_assert для проверки успешной инициализации placeholder_positions

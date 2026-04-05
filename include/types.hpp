@@ -1,9 +1,11 @@
 #pragma once
+#include <algorithm>
 #include <cstddef>
 #include <tuple>
 
 namespace stdx::details {
-#define PE_SIZE 80
+// #define PE_SIZE 80
+constexpr size_t pe_size = 80;
 
 // Шаблонный класс, хранящий C-style строку фиксированной длины
 template <std::size_t N>
@@ -18,32 +20,18 @@ struct fixed_string {
     template <std::size_t K>
         requires(K == N)
     constexpr fixed_string(const char (&str)[K]) {
-        size_type i = 0;
-        while (i < N) {
-            data[i] = str[i];
-            ++i;
-        }
+        std::copy_n(str, N, data);
     }
 
     // конструктор, принимающий ссылку на константный массив символов меньшего размера
     template <std::size_t K>
         requires(K < N)
     constexpr fixed_string(const char (&str)[K]) {
-        size_type i = 0;
-        while (i < K) {
-            data[i] = str[i];
-            ++i;
-        }
+        std::copy_n(str, K, data);
     }
 
     // консутруктор по двум указателям
-    constexpr fixed_string(const char *begin, const char *end) {
-        size_type i = 0;
-        auto ch = begin;
-        while (ch != end && i < N) {
-            data[i++] = *ch++;
-        }
-    }
+    constexpr fixed_string(const char *begin, const char *end) { std::copy(begin, end, data); }
 
     // явно заданный конструктор по умолчанию
     constexpr fixed_string() = default;
@@ -64,18 +52,18 @@ template <std::size_t K>
 fixed_string(const char (&)[K]) -> fixed_string<K>;
 
 // Шаблонный класс, хранящий fixed_string достаточной длины для хранения ошибки парсинга
-struct parse_error : fixed_string<PE_SIZE> {
-    using size_type = typename fixed_string<PE_SIZE>::size_type;
+struct parse_error : fixed_string<pe_size> {
+    using size_type = typename fixed_string<pe_size>::size_type;
     // явно заданный конструктор по умолчанию
     constexpr parse_error() = default;
 
     // конструктор, принимающий строку фиксированной длины
     template <size_type K>
-        requires(K <= PE_SIZE)
-    constexpr parse_error(const char (&str)[K]) : fixed_string<PE_SIZE>(str) {}
+        requires(K <= pe_size)
+    constexpr parse_error(const char (&str)[K]) : fixed_string<pe_size>(str) {}
 
     // конструктор по двум указателям
-    constexpr parse_error(const char *begin, const char *end) : fixed_string<PE_SIZE>(begin, end) {}
+    constexpr parse_error(const char *begin, const char *end) : fixed_string<pe_size>(begin, end) {}
 };
 
 // Шаблонный класс для хранения результатов парсинга

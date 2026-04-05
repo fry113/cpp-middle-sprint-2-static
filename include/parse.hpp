@@ -1,4 +1,5 @@
 #pragma once
+#include <charconv>
 #include <concepts>
 #include <cstdint>
 #include <string_view>
@@ -58,35 +59,24 @@ consteval auto get_current_source_for_parsing() {
     return std::pair{src_start, src_end};
 }
 
-template <fixed_string source>
-consteval uint64_t parse_unsigned_digits(size_t first = 0) {
-    uint64_t ret = 0;
-    const size_t last = source.size() - 1;
-    for (size_t i = first; i < last; ++i) {
-        const char ch = source.data[i];
-        ret = ret * 10 + static_cast<uint64_t>(ch - '0');
-    }
-    return ret;
-}
-
 // SFINAE-реализация parse_value (unsigned)
 template <fixed_string source, typename T>
 consteval T parse_value()
-    requires std::same_as<T, uint8_t> || std::same_as<T, uint16_t> || std::same_as<T, uint32_t> ||
-             std::same_as<T, uint64_t>
+    requires std::unsigned_integral<T>
 {
-    constexpr T ret = static_cast<T>(parse_unsigned_digits<source>());
-    return ret;
+    uint32_t ret{};
+    std::from_chars(source.data, source.data + source.size() - 1, ret);
+    return T(ret);
 }
 
 // SFINAE-реализация parse_value (signed)
 template <fixed_string source, typename T>
 consteval T parse_value()
-    requires std::same_as<T, int8_t> || std::same_as<T, int16_t> || std::same_as<T, int32_t> || std::same_as<T, int64_t>
+    requires std::signed_integral<T>
 {
-    constexpr bool is_negative = (source.data[0] == '-');
-    constexpr T ret = static_cast<T>(parse_unsigned_digits<source>(is_negative ? 1 : 0));
-    return is_negative ? -ret : ret;
+    int32_t ret{};
+    std::from_chars(source.data, source.data + source.size() - 1, ret);
+    return T(ret);
 }
 
 // концепт проверки, что строка может быть корректно распарсена в float/double
@@ -127,7 +117,7 @@ concept valid_float_source = [] {
 // SFINAE-реализация parse_value (float/double)
 template <fixed_string source, typename T>
 consteval T parse_value()
-    requires std::same_as<T, float> || std::same_as<T, double> || std::same_as<T, long double>
+    requires std::floating_point<T>
 {
     // перенес концепт проверки на возможность спарсить source, чтобы вывести сообщение об ошибке через static_assert
     static_assert(
@@ -137,8 +127,8 @@ consteval T parse_value()
     constexpr size_t size = source.size() - 1;
     constexpr size_t first = (source.data[0] == '-' || source.data[0] == '+') ? 1 : 0;
 
-    T ret = 0;
-    T frac_div = 1;
+    long double ret = 0;
+    long double frac_div = 1;
     bool fractional = false;
 
     for (size_t i = first; i < size; ++i) {
@@ -156,15 +146,15 @@ consteval T parse_value()
         fractional = true;
     }
 
-    return source.data[0] == '-' ? -ret : ret;
+    return source.data[0] == '-' ? T(-ret) : T(ret);
 }
 
 // SFINAE-реализация parse_value (string_view)
 template <fixed_string source, typename T>
 consteval T parse_value()
-    requires std::same_as<T, std::string_view>
+    requires std::same_as<std::remove_cv_t<T>, std::string_view>
 {
-    return std::string_view(source.data, source.size() - 1);
+    return T(source.data, source.size() - 1);
 }
 
 // SFINAE-реализация parse_value (fail)
@@ -197,7 +187,7 @@ concept placeholder_same_as = [] {
         return std::floating_point<T>;
     }
     if constexpr (ch == 's') {
-        return std::same_as<T, std::string_view>;
+        return std::same_as<std::remove_cv_t<T>, std::string_view>;
     }
     return false;
 }();
@@ -219,6 +209,13 @@ consteval T parse_input() {
     constexpr T ret = parse_value<src_substr, T>();
 
     return ret;
+}
+
+// для вывода сообщения о несоответствии типа T спецификатору I-ого плейсхолдера (вывод через концепт)
+template <size_t I, format_string fmt, fixed_string source, typename T>
+consteval T parse_input() {
+    static_assert(placeholder_same_as<I, fmt, T>, "type T != format specifier of placeholder ");
+    return T{};
 }
 
 }  // namespace stdx::details
