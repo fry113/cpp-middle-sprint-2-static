@@ -4,7 +4,6 @@
 #include <tuple>
 
 namespace stdx::details {
-// #define PE_SIZE 80
 constexpr size_t pe_size = 80;
 
 // Шаблонный класс, хранящий C-style строку фиксированной длины
@@ -30,7 +29,7 @@ struct fixed_string {
         std::copy_n(str, K, data);
     }
 
-    // консутруктор по двум указателям
+    // конструктор по двум указателям
     constexpr fixed_string(const char *begin, const char *end) { std::copy(begin, end, data); }
 
     // явно заданный конструктор по умолчанию
